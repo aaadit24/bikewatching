@@ -147,6 +147,9 @@ map.on('load', async () => {
       .domain([0, d3.max(stations, (d) => d.totalTraffic)])
       .range([0, 25]);
     
+    // Step 6.1: Create a quantize scale for traffic flow
+    let stationFlow = d3.scaleQuantize().domain([0, 1]).range([0, 0.5, 1]);
+    
     // Select the SVG element inside the map container
     const svg = d3.select('#map').select('svg');
     
@@ -156,7 +159,7 @@ map.on('load', async () => {
       .enter()
       .append('circle')
       .attr('r', d => radiusScale(d.totalTraffic))  // Set radius based on traffic
-      .attr('fill', 'steelblue')  // Circle fill color
+      .style('--departure-ratio', d => stationFlow(d.departures / d.totalTraffic))  // Add traffic flow
       .attr('stroke', 'white')    // Circle border color
       .attr('stroke-width', 1)    // Circle border thickness
       .attr('opacity', 0.6)       // Circle opacity
@@ -203,15 +206,18 @@ map.on('load', async () => {
       circles
         .data(filteredStations, (d) => d.short_name)
         .join('circle') // Ensure the data is bound correctly
-        .attr('r', (d) => radiusScale(d.totalTraffic)); // Update circle sizes
+        .attr('r', (d) => radiusScale(d.totalTraffic)) // Update circle sizes
+        .style('--departure-ratio', (d) =>
+          stationFlow(d.departures / d.totalTraffic),
+        );
     }
     
     function updateTimeDisplay() {
       const timeFilter = Number(timeSlider.value); // Get slider value
     
       if (timeFilter === -1) {
-        selectedTime.textContent = ''; // Clear time display
-        anyTimeLabel.style.display = 'block'; // Show "(any time)"
+        selectedTime.textContent = '(any time)'; // Clear time display
+        anyTimeLabel.style.display = 'none'; // Show "(any time)"
       } else {
         selectedTime.textContent = formatTime(timeFilter); // Display formatted time
         anyTimeLabel.style.display = 'none'; // Hide "(any time)"
